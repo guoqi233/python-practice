@@ -16,9 +16,9 @@ class EpollServer(object):
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         self.sock.bind((host, port))
         self.sock.listen(1)
-        self.sock.setblocking(0)
+        self.sock.setblocking(False)
         self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        print "Started Epoll Server"
+        print("Started Epoll Server")
         self.epoll = select.epoll()
         self.epoll.register(self.sock.fileno(), select.EPOLLIN)
 
@@ -33,7 +33,7 @@ class EpollServer(object):
                 for fileno, event in events:
                     if fileno == self.sock.fileno():
                         connection, address = self.sock.accept()
-                        connection.setblocking(0)
+                        connection.setblocking(False)
                         self.epoll.register(connection.fileno(), select.EPOLLIN)
                         connections[connection.fileno()] = connection
                         requests[connection.fileno()] = b''
@@ -58,10 +58,14 @@ class EpollServer(object):
             self.sock.close()
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Socket Server Example with Epoll')
     parser.add_argument('--port', action="store", dest="port", type=int, required=True)
     given_args = parser.parse_args()
     port = given_args.port
     server = EpollServer(host=SERVER_HOST, port=port)
     server.run()
+
+
+if __name__ == '__main__':
+    main()

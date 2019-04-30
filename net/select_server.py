@@ -12,7 +12,7 @@ class Server(object):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         self.server.bind((SERVER_HOST, port))
-        print 'Server listening to port: %s ...' % port
+        print('Server listening to port: {0} ...'.format(port))
         self.server.listen(backlog)
         self.outputs = []
 
@@ -28,7 +28,7 @@ class Server(object):
             for sock in readable:
                 if sock is self.server:
                     connect, address = self.server.accept()
-                    print address
+                    print(address)
                     inputs.append(connect)
                     break
                 if sock is sys.stdin:
@@ -36,7 +36,7 @@ class Server(object):
                     if result == "exit":
                         running = False
                     else:
-                        print "your input is:{}".format(result)
+                        print("your input is:{}".format(result))
                     break
                 else:
                     fp = array.array("u", " "*4096)
@@ -45,7 +45,7 @@ class Server(object):
                     if not info.strip():
                         inputs.remove(sock)
                         break
-                    print info.strip()
+                    print(info.strip())
                     data = {
                             "code": "Success",
                         }

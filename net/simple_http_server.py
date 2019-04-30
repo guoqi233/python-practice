@@ -1,6 +1,6 @@
 import sys
 
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = "8080"
@@ -13,7 +13,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
 
-        self.wfile.write("Hello from server")
+        self.wfile.write("Hello from server".encode())
         return
 
 
@@ -25,12 +25,12 @@ class CustomerHTTPServer(HTTPServer):
 def run_server(port):
     server = CustomerHTTPServer(DEFAULT_HOST, port)
     try:
-        print "Customer Http Server Running on port {0}".format(port)
+        print("Customer Http Server Running on port {0}".format(port))
         server.serve_forever()
     except Exception as error:
-        print error
+        print(error)
     except KeyboardInterrupt:
-        print "Server is Down"
+        print("Server is Down")
         server.socket.close()
 
 
