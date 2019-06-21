@@ -10,6 +10,7 @@ typedef struct sockaddr_in sa_in;
 
 int main(int agrc, char *argv[])
 {
+    // 创建 socket
     int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (listen_fd == -1)
     {
@@ -17,6 +18,7 @@ int main(int agrc, char *argv[])
         return -1;
     }
 
+    // 初始化服务器地址
     sa_in bindaddr;
     bindaddr.sin_family = AF_INET;
     bindaddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -27,6 +29,7 @@ int main(int agrc, char *argv[])
         return -1;
     }
 
+    // 监听
     if (listen(listen_fd, SOMAXCONN) == -1)
     {
         printf("listen error.\n");
@@ -37,6 +40,7 @@ int main(int agrc, char *argv[])
     {
         sa_in client_addr;
         socklen_t client_addr_len = sizeof(client_addr);
+        // 接受客户端连接
         int client_fd = accept(listen_fd, (sa *)&client_addr, &client_addr_len);
         if (client_fd != -1)
         {

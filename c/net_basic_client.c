@@ -24,7 +24,7 @@ int main(int agrc, char *argv[])
     sa_in server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_addr.sin_port = htons(5000);
+    server_addr.sin_port = htons(SERVER_PORT);
     if (connect(client_fd, (sa *)&server_addr, sizeof(server_addr)) == -1)
     {
         printf("connect server error.\n");
