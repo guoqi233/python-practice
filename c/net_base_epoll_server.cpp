@@ -93,94 +93,95 @@ int main()
             {
                 continue;
             }
-            else if (n == 0)
+        }
+        else if (n == 0)
+        {
+            continue;
+        }
+        for (size_t i = 0; i < n; i++)
+        {
+            //事件可读
+            if (epoll_events[i].events & EPOLLIN)
             {
-                continue;
-            }
-            for (size_t i = 0; i < n; i++)
-            {
-                //事件可读
-                if (epoll_events[i].events & EPOLLIN)
+                // listenfd
+                if (epoll_events[i].data.fd == listenfd)
                 {
-                    // listenfd
-                    if (epoll_events[i].data.fd == listenfd)
+                    sa_in clientaddr;
+                    socklen_t clientaddrlen = sizeof(clientaddr);
+                    int clientfd = accept(listenfd, (sa *)&clientaddr, &clientaddrlen);
+                    if (clientfd != -1)
                     {
-                        sa_in clientaddr;
-                        socklen_t clientaddrlen = sizeof(clientaddr);
-                        int clientfd = accept(listenfd, (sa *)&clientaddr, &clientaddrlen);
-                        if (clientfd != -1)
+                        int oldSocketFlag = fcntl(clientfd, F_GETFL, 0);
+                        int newSocketFlag = oldSocketFlag | O_NONBLOCK;
+                        if (fcntl(clientfd, F_SETFL, newSocketFlag) == -1)
                         {
-                            int oldSocketFlag = fcntl(clientfd, F_GETFL, 0);
-                            int newSocketFlag = oldSocketFlag | O_NONBLOCK;
-                            if (fcntl(clientfd, F_SETFL, newSocketFlag) == -1)
+                            close(clientfd);
+                            std::cout << "set clientfd no block error." << std::endl;
+                        }
+                        else
+                        {
+                            epoll_event client_fd_event;
+                            client_fd_event.data.fd = clientfd;
+                            client_fd_event.events = EPOLLIN;
+
+                            // 使用ET模式
+                            // client_fd_event.events = EPOLLET;
+
+                            if (epoll_ctl(epollfd, EPOLL_CTL_ADD, clientfd, &client_fd_event) != -1)
                             {
-                                close(clientfd);
-                                std::cout << "set clientfd no block error." << std::endl;
+                                std::cout << "new client accepted, clientfd: " << clientfd << std::endl;
                             }
                             else
                             {
-                                epoll_event client_fd_event;
-                                client_fd_event.data.fd = clientfd;
-                                client_fd_event.events = EPOLLIN;
-
-                                // 使用ET模式
-                                // client_fd_event.events = EPOLLET;
-
-                                if (epoll_ctl(epollfd, EPOLL_CTL_ADD, clientfd, &client_fd_event) == -1)
-                                {
-                                    std::cout << "new client accepted, clientfd: " << clientfd << std::endl;
-                                }
-                                else
-                                {
-                                    std::cout << "add client fd to epollfd error." << std::endl;
-                                    close(clientfd);
-                                }
+                                std::cout << "add client fd to epollfd error." << std::endl;
+                                close(clientfd);
                             }
                         }
                     }
-                    //普通可读
-                    else
-                    {
-                        std::cout << "client fd: " << epoll_events[i].data.fd << "recv data." << std::endl;
+                }
+                //普通可读
+                else
+                {
+                    std::cout << "client fd: " << epoll_events[i].data.fd << "recv data." << std::endl;
 
-                        char ch;
-                        //每次只收1个字节
-                        int m = recv(epoll_events[i].data.fd, &ch, 1, 0);
-                        if (m == 0)
+                    char ch;
+                    //每次只收1个字节
+                    int m = recv(epoll_events[i].data.fd, &ch, 1, 0);
+                    if (m == 0)
+                    {
+                        // 对方关闭了socket
+                        if (epoll_ctl(epollfd, EPOLL_CTL_DEL, epoll_events[i].data.fd, NULL) != -1)
                         {
-                            // 对方关闭了socket
-                            if (epoll_ctl(epollfd, EPOLL_CTL_DEL, epoll_events[i].data.fd, NULL) != -1)
+                            std::cout << "client disconnected, clientfd: " << epoll_events[i].data.fd << std::endl;
+                        }
+                        close(epoll_events[i].data.fd);
+                    }
+                    else if (m < 0)
+                    {
+                        // 接收出错
+                        if (errno != EWOULDBLOCK && errno != EINTR)
+                        {
+                            if (epoll_ctl(epollfd, EPOLL_CTL_DEL, epoll_events[i].data.fd, NULL) == -1)
                             {
                                 std::cout << "client disconnected, clientfd: " << epoll_events[i].data.fd << std::endl;
                             }
                             close(epoll_events[i].data.fd);
                         }
-                        else if (m < 0)
-                        {
-                            // 接收出错
-                            if (errno != EWOULDBLOCK && errno != EINTR)
-                            {
-                                if (epoll_ctl(epollfd, EPOLL_CTL_DEL, epoll_events[i].data.fd, NULL) == -1)
-                                {
-                                    std::cout << "client disconnected, clientfd: " << epoll_events[i].data.fd << std::endl;
-                                }
-                                close(epoll_events[i].data.fd);
-                            }
-                        }
-                        else
-                        {
-                            //正常接收
-                            std::cout << "recv from client: " << epoll_events[i].data.fd << ch << std::endl;
-                        }
+                    }
+                    else
+                    {
+                        //正常接收
+                        std::cout << "recv from client: " << epoll_events[i].data.fd << " " << ch << std::endl;
                     }
                 }
-                else if (epoll_events[i].events & POLLERR) // EPOLLERR POLLERR 都是0x008 可以查看宏定义
-                {
-                    // do nothing
-                }
+            }
+            else if (epoll_events[i].events & POLLERR) // EPOLLERR POLLERR 都是0x008 可以查看宏定义
+            {
+                // do nothing
             }
         }
     }
+
     close(listenfd);
     return 0;
 }
